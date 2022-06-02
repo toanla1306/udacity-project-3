@@ -33,7 +33,7 @@ jobs:
           command: |
             # code here
             cd backend
-            npm login
+            # npm login
             npm install
             npm run start 
             exit 1
