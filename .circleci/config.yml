@@ -37,6 +37,7 @@ jobs:
             chmod +x ~/docker-compose
             sudo mv ~/docker-compose /usr/local/bin/docker-compose
             docker-compose --version
+            sudo chmod 666 /var/run/docker.sock
       - run:
           name: docker compose setup postgres
           command: |
