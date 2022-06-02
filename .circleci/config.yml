@@ -36,10 +36,6 @@ jobs:
             npm login
             npm install
             npm run start 
-            npm run start:dev
-            npm run webpack
-            npm run start:hmr
-            npm run start:prod
             exit 1
       - save_cache:
           paths: [backend/node_modules]
