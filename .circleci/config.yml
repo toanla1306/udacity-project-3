@@ -35,6 +35,8 @@ jobs:
           command: |
             cd util
             docker-compose up -d
+            docker images
+            docker ps -a
       - run:
           name: Build back-end
           command: |
