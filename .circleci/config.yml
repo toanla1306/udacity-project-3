@@ -32,7 +32,7 @@ jobs:
           name: docker compose setup postgres
           command: |
             cd util
-            docker-compose up
+            sudo docker-compose -f docker-compose.yml up -d
       - run:
           name: Build back-end
           command: |
