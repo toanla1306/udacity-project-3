@@ -24,11 +24,12 @@ jobs:
   build-backend:
     docker:
       - image: circleci/node:13.8.0
-    machine: true
     steps:
       - checkout
       - restore_cache:
           keys: [backend-build]
+      - setup_remote_docker: 
+          version: 20.10.14
       - run:
           name: docker compose setup postgres
           command: |
