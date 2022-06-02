@@ -24,6 +24,11 @@ jobs:
   build-backend:
     docker:
       - image: circleci/node:13.8.0
+      - image: cimg/postgres:14.0
+        environment: 
+          POSTGRES_USER: postgres
+          POSTGRES_DB: glee
+          POSTGRES_PASSWORD: password
     steps:
       - checkout
       - restore_cache:
@@ -37,26 +42,10 @@ jobs:
       #       docker-compose up -d
       #       docker images
       #       docker ps -a
-      # - run:
-      # # Our primary container isn't MYSQL so run a sleep command until it's ready.
-      #     name: Waiting for MySQL to be ready
-      #     command: |
-      #       for i in `seq 1 10`;
-      #       do
-      #         nc -z 127.0.0.1 5432 && echo Success && exit 0
-      #         echo -n .
-      #         sleep 5
-      #       done
-      #       echo Failed waiting for MySQL && exit 1
       - run:
           name: Build back-end
           command: |
             # code here
-            cd util
-            docker-compose up -d
-            docker images
-            docker ps -a
-            cd ..
             cd backend
             npm install
             npm run start 
