@@ -24,7 +24,7 @@ jobs:
   build-backend:
     docker:
       - image: circleci/node:13.8.0
-      - image: circleci/cci-demo-docker-primary:0.0.1
+      # - image: circleci/cci-demo-docker-primary:0.0.1
     steps:
       - checkout
       - restore_cache:
@@ -38,6 +38,7 @@ jobs:
             chmod +x ~/docker-compose
             sudo mv ~/docker-compose /usr/local/bin/docker-compose
             docker-compose --version
+            systemctl start docker
       - run:
           name: docker compose setup postgres
           command: |
