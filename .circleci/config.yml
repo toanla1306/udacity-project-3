@@ -29,6 +29,11 @@ jobs:
       - restore_cache:
           keys: [backend-build]
       - run:
+          name: docker compose setup postgres
+          command: |
+            cd util
+            docker-compose up
+      - run:
           name: Build back-end
           command: |
             # code here
