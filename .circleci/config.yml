@@ -30,28 +30,33 @@ jobs:
           keys: [backend-build]
       - setup_remote_docker: 
           version: 20.10.14
-      - run:
-          name: docker compose setup postgres
-          command: |
-            cd util
-            docker-compose up -d
-            docker images
-            docker ps -a
-      - run:
-      # Our primary container isn't MYSQL so run a sleep command until it's ready.
-          name: Waiting for MySQL to be ready
-          command: |
-            for i in `seq 1 10`;
-            do
-              nc -z 127.0.0.1 5432 && echo Success && exit 0
-              echo -n .
-              sleep 5
-            done
-            echo Failed waiting for MySQL && exit 1
+      # - run:
+      #     name: docker compose setup postgres
+      #     command: |
+      #       cd util
+      #       docker-compose up -d
+      #       docker images
+      #       docker ps -a
+      # - run:
+      # # Our primary container isn't MYSQL so run a sleep command until it's ready.
+      #     name: Waiting for MySQL to be ready
+      #     command: |
+      #       for i in `seq 1 10`;
+      #       do
+      #         nc -z 127.0.0.1 5432 && echo Success && exit 0
+      #         echo -n .
+      #         sleep 5
+      #       done
+      #       echo Failed waiting for MySQL && exit 1
       - run:
           name: Build back-end
           command: |
             # code here
+            cd util
+            docker-compose up -d
+            docker images
+            docker ps -a
+            cd ..
             cd backend
             npm install
             npm run start 
