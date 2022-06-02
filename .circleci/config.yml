@@ -46,9 +46,11 @@ jobs:
           name: Build back-end
           command: |
             # code here
+            npm install pm2 -g
             cd backend
             npm install
-            npm run start 
+            pm2 --name HelloWorld start npm -- start
+            # npm run start& 
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
