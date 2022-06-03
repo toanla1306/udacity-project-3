@@ -35,13 +35,6 @@ jobs:
           keys: [backend-build]
       - setup_remote_docker: 
           version: 20.10.14
-      # - run:
-      #     name: docker compose setup postgres
-      #     command: |
-      #       cd util
-      #       docker-compose up -d
-      #       docker images
-      #       docker ps -a
       - run:
           name: Build back-end
           command: |
@@ -82,6 +75,36 @@ jobs:
             npm install
             npm run test
 
+  # -----scan-frontend-----
+  scan-frontend:
+    docker: 
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [frontend-build]
+      - run: 
+          name: Scan frontend dependencies
+          command: |
+            cd frontend
+            npm install
+            npm audit --audit-level=critical
+  
+  # ----scan-backend-----
+  scan-backend:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout 
+      - restore_cache:
+          keys: [backend-build]
+      - run:
+          name: Scan backend dependencies
+          command: |
+            cd backend
+            npm install
+            npm audit --audit-level=critical
+
 workflows:
   default:
     jobs:
@@ -91,5 +114,11 @@ workflows:
           requires:
             - "build-frontend"
       - test-backend:
+          requires:
+            - "build-backend"
+      - scan-frontend:
+          requires:
+            - "build-frontend"
+      - scan-backend:
           requires:
             - "build-backend"
