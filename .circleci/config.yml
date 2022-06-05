@@ -153,6 +153,17 @@ jobs:
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}" \
               --tags project=udapeople
+      - run:
+          name: Get IPv4 Public of server backend
+          command: |
+            echo "[all]" > ~/inventory.txt | aws ec2 describe-instances \
+              --filters "Name=tag-value,Values=test-get-name" \
+              --query "Reservations[*].Instances[].PublicDnsName" \
+              --output text >> ~/inventory.txt
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - inventory.txt
       - destroy_environment
 
   configure-infrastructure:
@@ -163,7 +174,16 @@ jobs:
       - add_ssh_keys:
           fingerprints:
             - "24:4e:39:7a:30:81:ed:c9:3b:a9:b8:0c:df:d3:1d:aa"
-      - 
+      - run: 
+          name: Install independencies
+          command: |
+            apk add --update ansible
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Configure Infrastructure
+          command: |
+            ansible-playbook -i ~/inventory.txt .circleci/ansible/configure-server.yaml
 workflows:
   default:
     jobs:
