@@ -175,7 +175,7 @@ jobs:
       - run:
           name: Get IPv4 Public of server backend
           command: |
-            echo "[all]" > inventory.txt | aws ec2 describe-instances \
+            echo "[web]" > inventory.txt | aws ec2 describe-instances \
               --filters "Name=tag-value,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --query "Reservations[*].Instances[].PublicDnsName" \
               --output text >> inventory.txt
