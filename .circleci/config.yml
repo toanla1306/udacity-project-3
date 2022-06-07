@@ -15,6 +15,15 @@ commands:
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}"
             aws cloudformation delete-stack \
               --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}"
+  aws_configure_credential:
+    steps:
+      - run:
+          name: Create Credential Configuration AWS
+          command: |
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            aws configure set aws_session_token $AWS_SESSION_TOKEN
+            aws configure set region $AWS_REGION
 
 jobs:
   # ----build frontend-----
@@ -108,6 +117,7 @@ jobs:
           command: |
             cd frontend
             npm install
+            npm audit fix --audit-level=critical --force
             npm audit --audit-level=critical
   
   # ----scan-backend-----
@@ -123,6 +133,7 @@ jobs:
           command: |
             cd backend
             npm install
+            npm audit fix --audit-level=critical --force
             npm audit --audit-level=critical
 
   # ----deploy infrastructure frontend backend-----
@@ -131,17 +142,16 @@ jobs:
       - image: amazon/aws-cli
     steps:
       - checkout 
+      - aws_configure_credential
       - run:
-          name: Create Certificate
-          command: |
-            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-            aws configure set region $AWS_DEFAULT_REGION
+          name: isntall tar
+          command: | 
+            yum install -y tar gzip
       - run:
           name: Deploy Infrastructure Backend
           command: |
             aws cloudformation deploy \
-              --template-file .circleci/files/backend.yaml
+              --template-file .circleci/files/backend.yml \
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}" \
               --tags project=udapeople
@@ -149,26 +159,27 @@ jobs:
           name: Deploy Infrastructure Frontend
           command: |
             aws cloudformation deploy \
-              --template-file .circleci/files/frontend.yaml
-              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --template-file .circleci/files/frontend.yml \
+              --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}" \
               --tags project=udapeople
       - run:
           name: Get IPv4 Public of server backend
           command: |
-            echo "[all]" > ~/inventory.txt | aws ec2 describe-instances \
-              --filters "Name=tag-value,Values=test-get-name" \
+            sleep 30
+            echo "[all]" > inventory.txt | aws ec2 describe-instances \
+              --filters "Name=tag-value,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --query "Reservations[*].Instances[].PublicDnsName" \
-              --output text >> ~/inventory.txt
+              --output text >> inventory.txt
       - persist_to_workspace:
-          root: ~/
+          root: .
           paths:
-            - inventory.txt
+            - .circleci/ansible/inventory.txt
       - destroy_environment
 
   configure-infrastructure:
     docker:
-      - image: python:3.7-alpine3.11
+      - image: python:3.11-rc-alpine
     steps:
       - checkout 
       - add_ssh_keys:
@@ -178,26 +189,32 @@ jobs:
           name: Install independencies
           command: |
             apk add --update ansible
+            apk add --no-cache aws-cli
       - attach_workspace:
-          at: ~/
+          at: .
+      - aws_configure_credential
       - run:
           name: Configure Infrastructure
           command: |
-            ansible-playbook -i ~/inventory.txt .circleci/ansible/configure-server.yaml
+            cd .circleci/ansible
+            ansible-playbook -i inventory.txt configure-server.yml
+      - destroy_environment
 workflows:
   default:
     jobs:
       - build-frontend
       - build-backend
-      # - test-frontend:
-      #     requires:
-      #       - "build-frontend"
-      # - test-backend:
-      #     requires:
-      #       - "build-backend"
-      # - scan-frontend:
-      #     requires:
-      #       - "build-frontend"
-      # - scan-backend:
-      #     requires:
-      #       - "build-backend"
+      - test-frontend:
+          requires:
+            - "build-frontend"
+      - test-backend:
+          requires:
+            - "build-backend"
+      - scan-frontend:
+          requires:
+            - "build-frontend"
+      - scan-backend:
+          requires:
+            - "build-backend"
+      - deploy-infrastructure:
+          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
