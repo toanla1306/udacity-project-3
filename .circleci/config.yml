@@ -212,10 +212,12 @@ jobs:
   run-migrations:
     docker: 
       - image: circleci/node:13.8.0
+      - image: amazon/aws-cli
     steps:
       - checkout 
       - restore_cache:
           keys: [backend-build]
+      - aws_configure_credential
       - run:
           name: run migration commnad 
           command: |
