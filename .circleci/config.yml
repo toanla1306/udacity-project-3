@@ -17,6 +17,15 @@ commands:
               --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}"
             aws cloudformation delete-stack \
               --stack-name "udapeople-cloudfront-${CIRCLE_WORKFLOW_ID:0:7}"
+  aws_cli_intsall:
+    steps:
+      - run:
+          name: Install aws-cli
+          command: |
+            sudo apt install curl
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+            unzip awscliv2.zip \
+            sudo ./aws/install
   aws_configure_credential:
     steps:
       - run:
@@ -223,7 +232,7 @@ jobs:
       - checkout 
       - restore_cache:
           keys: [backend-build]
-      # - add_env_backend
+      - add_env_backend
       - run:
           name: run migration commnad 
           command: |
@@ -234,6 +243,33 @@ jobs:
             then
               curl -H "Content-Type: text/plain" -H "token: 7933fe63-4687-4fa1-8426-aa25aa1730ec" --request PUT --data "1" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7}
             fi
+  deploy-frontend:
+    docker: 
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout 
+      - aws_cli_intsall
+      - aws_configure_credential
+      - run:
+          name: isntall tar
+          command: | 
+            yum install -y tar gzip
+      - run:
+          name: Get backend URL
+          command: |
+            export BACKEND_IP=$(aws ec2 describe-instances --filters "Name=tag-value,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --query "Reservations[*].Instances[].PublicIpAddress" --output text)
+            export API_URL="http://${BACKEND_IP}:3030"
+            echo "API_URL = ${API_URL}"
+            echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
+            cat frontend/.env
+      - run:
+          name: deploy frontend objects
+          command: |
+            cd frontend
+            npm install
+            npm run build
+            tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
+            aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
     
 workflows:
   default:
@@ -259,3 +295,5 @@ workflows:
       - run-migrations:
           requires:
             - "configure-infrastructure"
+      - deploy-frontend:
+          requires: [run-migrations]
