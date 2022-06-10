@@ -11,6 +11,7 @@ commands:
           name: Destroy environment
           when: on_fail
           command: |
+            aws s3 rm s3://udapeople-{CIRCLE_WORKFLOW_ID:0:7} --recursive
             aws cloudformation delete-stack \
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}"
             aws cloudformation delete-stack \
@@ -254,19 +255,10 @@ jobs:
       - checkout 
       - aws_cli_intsall
       - aws_configure_credential
-      # - run:
-      #     name: isntall tar
-      #     command: | 
-      #       sudo apt install -y tar
       - run:
           name: Get backend URL
           command: |
-            # export BACKEND_IP=$(aws ec2 describe-instances --filters "Name=tag-value,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --query "Reservations[*].Instances[].PublicIpAddress" --output text)
-            # export API_URL="http://${BACKEND_IP}:3030"
-            # echo "API_URL = ${API_URL}"
-            # echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
-            # cat frontend/.env
-            export BACKEND_IP=$(aws ec2 describe-instances --filters "Name=tag-value,Values=backend-9b71071" --query "Reservations[*].Instances[].PublicIpAddress" --output text)
+            export BACKEND_IP=$(aws ec2 describe-instances --filters "Name=tag-value,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --query "Reservations[*].Instances[].PublicIpAddress" --output text)
             export API_URL="http://${BACKEND_IP}:3030"
             echo "API_URL = ${API_URL}"
             echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
@@ -278,7 +270,7 @@ jobs:
             npm install
             npm run build
             # tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
-            aws s3 cp dist s3://udapeople-9b71071 --recursive
+            aws s3 cp dist s3://udapeople-{CIRCLE_WORKFLOW_ID:0:7} --recursive
 
   deploy-backend:
     docker: 
@@ -290,18 +282,19 @@ jobs:
       - run: 
           name: Install independencies
           command: |
-            apk add --update ansible tar gzip npm nodejs
+            apk add --update ansible tar
             apk add --no-cache aws-cli
-      - attach_workspace:
-          at: .
+      # - attach_workspace:
+      #     at: .
       - run: 
           name: deploy bacnend
           command: |
-            echo "NODE_ENV=production" >> backend/.env
+            # echo "NODE_ENV=production" >> backend/.env
             cd backend
             npm run build
             cd ..
             tar -C backend -czvf artifact.tar.gz .
+            cp artifact.tar.gz .circleci/ansible/roles/deploy/files
             cd .circleci/ansible
             cat inventory.txt
             ansible-playbook -i inventory.txt deploy-backend.yml
@@ -332,4 +325,5 @@ workflows:
       #       - "configure-infrastructure"
       # - deploy-frontend:
       #     requires: [run-migrations]
-      - deploy-frontend
+      # - deploy-frontend
+      - deploy-backend
