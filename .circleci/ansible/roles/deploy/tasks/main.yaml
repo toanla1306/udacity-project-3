@@ -1,18 +1,18 @@
 - name: create directory
   file: 
-    path: /home/web
+    path: /home/ubuntu
     state: directory
 
 - name: copy artifact to web directory
   template: 
     src: files/artifact.tar.gz
-    dest: /home/web/artifact.tar.gz
+    dest: /home/ubuntu/artifact.tar.gz
 
 - name: uncompress
   become: yes
   unarchive:
     src: artifact.tar.gz
-    dest: /home/web
+    dest: /home/ubuntu
 
 - name: build and start node
   shell: |
