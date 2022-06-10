@@ -292,6 +292,7 @@ jobs:
           command: |
             # echo "NODE_ENV=production" >> backend/.env
             cd backend
+            npm i
             npm run build
             cd ..
             tar -C backend -czvf artifact.tar.gz .
