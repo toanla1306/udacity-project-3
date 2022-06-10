@@ -23,8 +23,9 @@ commands:
           name: Install aws-cli
           command: |
             sudo apt install curl
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
-            unzip awscliv2.zip \
+            sudo apt install unzip
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
             sudo ./aws/install
   aws_configure_credential:
     steps:
@@ -36,12 +37,6 @@ commands:
             aws configure set aws_session_token $AWS_SESSION_TOKEN
             aws configure set region $AWS_DEFAULT_REGION
 
-  add_env_backend:
-    steps:
-      - run:
-          name: Create file .env for migration and deployment backend
-          command: |
-            echo "VERSION=1\nTYPEORM_CONNECTION=${TYPEORM_CONNECTION}\nTYPEORM_MIGRATIONS_DIR=${TYPEORM_MIGRATIONS_DIR}\nTYPEORM_ENTITIES=${TYPEORM_ENTITIES}\nTYPEORM_MIGRATIONS=${TYPEORM_MIGRATIONS}\nTYPEORM_HOST=${TYPEORM_HOST}\nTYPEORM_PORT=${TYPEORM_PORT}\nTYPEORM_USERNAME=${TYPEORM_USERNAME}\nTYPEORM_PASSWORD=${TYPEORM_PASSWORD}\nTYPEORM_DATABASE=${TYPEORM_DATABASE}" >> project/backend/.env
 
 jobs:
   # ----build frontend-----
@@ -121,7 +116,6 @@ jobs:
       # - slack/notify:
       #     event: fail
       #     template: basic_fail_1
-
   # -----scan-frontend-----
   scan-frontend:
     docker: 
@@ -201,6 +195,7 @@ jobs:
             - .circleci/ansible/inventory.txt
       - destroy_environment
 
+  # -----Configure Infrastructure-----------
   configure-infrastructure:
     docker:
       - image: python:3.11-rc-alpine
@@ -225,6 +220,7 @@ jobs:
             ansible-playbook -i inventory.txt configure-server.yml
       - destroy_environment
 
+  # -----run migration------
   run-migrations:
     docker: 
       - image: circleci/node:13.8.0
@@ -232,7 +228,14 @@ jobs:
       - checkout 
       - restore_cache:
           keys: [backend-build]
-      - add_env_backend
+    #  - run:
+    #       name: Create file .env for migration and deployment backend
+    #       command: |
+    #         echo "VERSION=1\nTYPEORM_CONNECTION=${TYPEORM_CONNECTION}\nTYPEORM_MIGRATIONS_DIR=${TYPEORM_MIGRATIONS_DIR}\nTYPEORM_ENTITIES=${TYPEORM_ENTITIES}\nTYPEORM_MIGRATIONS=${TYPEORM_MIGRATIONS}\nTYPEORM_HOST=${TYPEORM_HOST}\nTYPEORM_PORT=${TYPEORM_PORT}\nTYPEORM_USERNAME=${TYPEORM_USERNAME}\nTYPEORM_PASSWORD=${TYPEORM_PASSWORD}\nTYPEORM_DATABASE=${TYPEORM_DATABASE}" >> backend/.env
+      # - persist_to_workspace:
+      #     root: .
+      #     paths:
+      #       - backend/.env
       - run:
           name: run migration commnad 
           command: |
@@ -243,6 +246,7 @@ jobs:
             then
               curl -H "Content-Type: text/plain" -H "token: 7933fe63-4687-4fa1-8426-aa25aa1730ec" --request PUT --data "1" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7}
             fi
+  
   deploy-frontend:
     docker: 
       - image: circleci/node:13.8.0
@@ -268,8 +272,34 @@ jobs:
             cd frontend
             npm install
             npm run build
-            tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
+            # tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
             aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
+
+  deploy-backend:
+    docker: 
+      - image: python:3.11-rc-alpine
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "24:4e:39:7a:30:81:ed:c9:3b:a9:b8:0c:df:d3:1d:aa"
+      - run: 
+          name: Install independencies
+          command: |
+            apk add --update ansible tar gzip npm nodejs
+            apk add --no-cache aws-cli
+      - attach_workspace:
+          at: .
+      - run: 
+          name: deploy bacnend
+          command: |
+            echo "NODE_ENV=production" >> backend/.env
+            cd backend
+            npm run build
+            cd ..
+            tar -C backend -czvf artifact.tar.gz .
+            cd .circleci/ansible
+            cat inventory.txt
+            ansible-playbook -i inventory.txt deploy-backend.yml
     
 workflows:
   default:
