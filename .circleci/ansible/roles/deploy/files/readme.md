@@ -1,1 +1,0 @@
-Folder is used to save artiface and then transfer to ansible

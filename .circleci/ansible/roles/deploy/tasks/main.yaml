@@ -1,29 +1,21 @@
-- name: install tar 
-  become: yes
-  apt:
-    name: tar
-    state: latest
-    update_cache: yes
-
 - name: create directory
   file: 
-    path: ~/web
+    path: /home/web
     state: directory
 
 - name: copy artifact to web directory
   template: 
     src: files/artifact.tar.gz
-    dest: ~/web/artifact.tar.gz
+    dest: /home/web/artifact.tar.gz
 
 - name: uncompress
   become: yes
   unarchive:
-    src: ~/web/artifact.tar.gz
-    dest: ~/web
+    src: artifact.tar.gz
+    dest: /home/web
 
 - name: build and start node
   shell: |
-    cd ~/web
     npm install
     pm2 stop default
     pm2 start npm -- start
