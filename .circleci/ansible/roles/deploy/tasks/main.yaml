@@ -1,4 +1,11 @@
-- name: "create directory"
+- name: install tar 
+  become: yes
+  apt:
+    name: tar
+    state: latest
+    update_cache: yes
+
+- name: create directory
   file: 
     path: ~/web
     state: directory
