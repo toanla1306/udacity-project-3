@@ -11,7 +11,7 @@ commands:
           name: Destroy environment
           when: on_fail
           command: |
-            aws s3 rm s3://udapeople-{CIRCLE_WORKFLOW_ID:0:7} --recursive
+            aws s3 rm s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
             aws cloudformation delete-stack \
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}"
             aws cloudformation delete-stack \
@@ -300,11 +300,11 @@ jobs:
             npm run build
             cd ..
             tar -C backend -czvf artifact.tar.gz .
-            mkdir .circleci/ansible/roles/deploy/files
-            cp -r artifact.tar.gz .circleci/ansible/roles/deploy/files
+            # mkdir .circleci/ansible/roles/deploy/files
+            # cp -r artifact.tar.gz .circleci/ansible/roles/deploy/files
             cd .circleci/ansible
             cat inventory.txt
-            ansible-playbook -i inventory.txt deploy-backend.yml
+            ansible-playbook -i inventory.txt deploy-backend.yml -vvv
       - destroy_environment
     
 workflows:

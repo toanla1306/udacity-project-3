@@ -1,18 +1,27 @@
-- name: create directory
+- name: "install depencies"
+  become: yes
+  apt:
+    name: tar
+    state: latest
+    update_cache: yes
+
+- name: create directory store web code
+  become: yes
   file: 
-    path: /home/ubuntu
+    path: ~/web
     state: directory
+    mode: 0755
 
 - name: copy artifact to web directory
   template: 
-    src: files/artifact.tar.gz
-    dest: /home/ubuntu/artifact.tar.gz
+    src: ~/project/artifact.tar.gz
+    dest: ~/web/artifact.tar.gz
 
 - name: uncompress
   become: yes
-  unarchive:
-    src: artifact.tar.gz
-    dest: /home/ubuntu
+  shell:
+    cd ~/web
+    tar -vxf artifact.tar.gz
 
 - name: build and start node
   shell: |
