@@ -13,7 +13,8 @@
     mode: 0755
 
 - name: copy artifact to web directory
-  template: 
+  become: yes
+  copy: 
     src: ~/project/artifact.tar.gz
     dest: ~/web/artifact.tar.gz
 
