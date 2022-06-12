@@ -20,7 +20,7 @@
 
 - name: uncompress
   become: yes
-  shell:
+  shell: |
     cd /home/web
     tar -vxf artifact.tar.gz
 
