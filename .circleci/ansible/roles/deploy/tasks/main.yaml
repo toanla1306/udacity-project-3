@@ -21,7 +21,7 @@
 - name: uncompress
   become: yes
   shell:
-    cd home/web
+    cd /home/web
     tar -vxf artifact.tar.gz
 
 - name: build and start node
