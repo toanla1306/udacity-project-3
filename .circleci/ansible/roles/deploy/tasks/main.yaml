@@ -16,7 +16,7 @@
   become: yes
   copy: 
     src: ~/project/artifact.tar.gz
-    dest: home/web/artifact.tar.gz
+    dest: /home/web/artifact.tar.gz
 
 - name: uncompress
   become: yes
@@ -26,7 +26,7 @@
 
 - name: build and start node
   shell: |
-    cd home/web
+    cd /home/web
     npm install
     pm2 stop default
     pm2 start npm -- start
