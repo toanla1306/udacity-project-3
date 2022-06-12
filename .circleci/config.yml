@@ -18,22 +18,22 @@ commands:
               --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}"
             aws cloudformation delete-stack \
               --stack-name "udapeople-cloudfront-${CIRCLE_WORKFLOW_ID:0:7}"
-  # revert_migrations:
-  #   description: Revert the last migration if successfully run in the current workflow.
-  #   steps:
-  #     - run:
-  #         name: Revert migrations
-  #         when: on_fail
-  #         command: |
-  #           # Your Memstash GET URL code goes here
-  #           # See an example below
-  #           SUCCESS=$(curl -H "token: e52b52de-ee26-41a5-86e8-e8dcc3d995a5" --request GET https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7})
-  #           if (( $SUCCESS == 1 ));
-  #           then
-  #             cd ~/project/backend
-  #             npm install
-  #             npm run migration:revert
-  #           fi 
+  revert_migrations:
+    description: Revert the last migration if successfully run in the current workflow.
+    steps:
+      - run:
+          name: Revert migrations
+          when: on_fail
+          command: |
+            # Your Memstash GET URL code goes here
+            # See an example below
+            SUCCESS=$(curl -H "token: e52b52de-ee26-41a5-86e8-e8dcc3d995a5" --request GET https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7})
+            if (( $SUCCESS == 1 ));
+            then
+              cd ~/project/backend
+              npm install
+              npm run migration:revert
+            fi 
   aws_cli_intsall:
     steps:
       - run:
@@ -291,7 +291,7 @@ jobs:
             # tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
             aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
       - destroy_environment
-      # - revert_migrations
+      - revert_migrations
 
   deploy-backend:
     docker: 
@@ -324,7 +324,7 @@ jobs:
             cat inventory.txt
             ansible-playbook -i inventory.txt deploy-backend.yml
       - destroy_environment
-      # - revert_migrations
+      - revert_migrations
   smoke-test:
     docker: 
       - image: python:3.11-rc-alpine
@@ -359,8 +359,8 @@ jobs:
             else
               return 1
             fi
-      # - destroy_environment
-      # - revert_migrations
+      - destroy_environment
+      - revert_migrations
     
 workflows:
   default:
