@@ -16,8 +16,6 @@ commands:
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}"
             aws cloudformation delete-stack \
               --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}"
-            aws cloudformation delete-stack \
-              --stack-name "udapeople-cloudfront-${CIRCLE_WORKFLOW_ID:0:7}"
   revert_migrations:
     description: Revert the last migration if successfully run in the current workflow.
     steps:
@@ -27,8 +25,8 @@ commands:
           command: |
             # Your Memstash GET URL code goes here
             # See an example below
-            SUCCESS=$(curl -H "token: e52b52de-ee26-41a5-86e8-e8dcc3d995a5" --request GET https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7})
-            if (( $SUCCESS == 1 ));
+            VALUE=$(curl -k https://kvdb.io/64xvxrRXspfWtdyJZVPqvf/migration_${CIRCLE_WORKFLOW_ID:0:7})
+            if [[ $VALUE -eq 1 ]]
             then
               cd ~/project/backend
               npm install
@@ -192,14 +190,6 @@ jobs:
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}" \
               --tags project=udapeople
       - run:
-          name: Deploy Infrastructure CloudFront
-          command: | 
-            aws cloudformation deploy \
-              --template-file .circleci/files/cloudfront.yml \
-              --stack-name "udapeople-cloudfront-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:7}" \
-              --tags project=udapeople
-      - run:
           name: Get IPv4 Public of server backend
           command: |
             echo "[web]" > .circleci/ansible/inventory.txt | aws ec2 describe-instances \
@@ -325,6 +315,7 @@ jobs:
             ansible-playbook -i inventory.txt deploy-backend.yml
       - destroy_environment
       - revert_migrations
+  
   smoke-test:
     docker: 
       - image: python:3.11-rc-alpine
@@ -361,6 +352,21 @@ jobs:
             fi
       - destroy_environment
       - revert_migrations
+
+  cloudfront-update:
+    docker: 
+      - image: amazon/aws-cli
+    steps:
+      - checkout 
+      - aws_configure_credential
+      - run:
+          name: Deploy Infrastructure CloudFront
+          command: | 
+            aws cloudformation deploy \
+              --template-file .circleci/files/cloudfront.yml \
+              --stack-name "udapeople-cloudfront-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:7}" \
+              --tags project=udapeople
     
 workflows:
   default:
@@ -392,3 +398,5 @@ workflows:
           requires: [run-migrations]
       - smoke-test:
           requires: [deploy-frontend, deploy-backend]
+      - cloudfront-update:  
+          requires: [smoke-test]
