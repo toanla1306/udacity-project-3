@@ -1,0 +1,2 @@
+Public URL to GitHub repository: https://github.com/toanla1306/udacity-project-3
+Public URL for S3 Bucket: http://udapeople-e7370ec.s3-website-us-east-1.amazonaws.com
